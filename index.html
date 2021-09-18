@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    #game-wrapper {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        text-align: center;
+        justify-content: center;
+        flex-direction: column;
+        background-color: #343434;
+    }
+
+    .game {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .canvas-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .counter-wrapper {
+        min-width: 100px;
+        background-color: wheat;
+        margin: 0 0 40px 0;
+        border-radius: 8px;
+        padding: 10px 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0px 10px 15px 0px rgb(102, 96, 83);
+    }
+
+    #counter {
+        font-family: sans-serif;
+        font-weight: bold;
+        font-size: 40px;
+    }
+
+    #canvas {
+	    border-radius: 8px;	
+        margin: 0 auto;
+        display: content-box;
+        background-color: #161618;
+        border-radius: 15px;
+        border: 10px solid #161618;
+        box-shadow: 0px 0px 20px 10px #161618;
+    }
+
+    
+</style>
+<body>
+    <div id="game-wrapper">
+        <div class="game">
+            <div class="canvas-header">
+                <div class="counter-wrapper">
+                    <div id="counter"></div>
+                </div>
+            </div>
+            <canvas id="canvas" width="400px" height="400px" style="background-color: black;"></canvas>
+        </div>
+    </div>
+    <script>
+        
+        canv = document.getElementById('canvas');
+        ctx = canvas.getContext('2d');
+        document.addEventListener("keydown",keyPush);
+        
+        const counter = document.getElementById('counter')
+        let score = 0
+
+        const config = {
+            step: 0,
+            maxStep: 6,
+        }
+
+        let player = {
+            posX: 60,
+            posY: 60,
+            velX: 20,
+            velY: 0,
+            tails: [],
+            maxTails: 3,
+        }
+
+        let berry = {
+            posX: 160,
+            posY: 160
+        }
+
+        function drawScore() {
+            counter.innerHTML = score;
+        }
+
+        function gameLoop() {
+
+            requestAnimationFrame( gameLoop );
+
+            if ( ++config.step < config.maxStep) {
+                return;
+            }
+	        config.step = 0;
+
+            ctx.fillStyle="black";
+            ctx.fillRect(0, 0, canv.width, canv.height);
+
+            drawSnake();
+            drawBerry();
+            drawScore();
+        }
+
+        gameLoop()
+
+        function drawBerry() {
+            ctx.fillStyle="orange";
+            ctx.fillRect(berry.posX, berry.posY, 20, 20);
+        }
+
+        function drawSnake() {
+            player.posX += player.velX
+            player.posY += player.velY
+
+            if (player.posX >= canv.width) {
+                player.posX = 0
+            } else if (player.posX < 0) {
+                player.posX = canv.width
+            } else if (player.posY >= canv.height) {
+                player.posY = 0
+            } else if (player.posY < 0) {
+                player.posY = canv.height
+            }
+
+            player.tails.push({x: player.posX, y:player.posY})
+            while (player.tails.length > player.maxTails) {
+                player.tails.shift()
+            }
+
+            player.tails.forEach(function(e, index) {
+                
+                if (e.x === berry.posX && e.y === berry.posY) {
+
+                    optimalBerry()
+
+                    if (index == player.tails.length - 1) {
+                        player.maxTails++
+                        score++
+                    }
+                }
+                if (index == player.tails.length - 1) {
+                    ctx.fillStyle="red";
+                } else {
+                    ctx.fillStyle="green";
+                }
+                
+                ctx.fillRect(e.x, e.y, 20, 20);
+            })
+            
+            for (let i = 0; i < player.tails.length - 1; i++) {
+                if (player.tails[player.tails.length - 1].x === player.tails[i].x && player.tails[player.tails.length - 1].y === player.tails[i].y) {
+                    player.maxTails = 3
+                    score = 0
+                    break
+                }
+            }
+        }
+
+        function optimalBerry() {
+            let rand = {}
+            
+            rand.x = getRandomInt(0, 20) * 20
+            rand.y = getRandomInt(0, 20) * 20
+            let completion = false
+
+            while (completion === false) {
+                for (let i = 0; i < player.tails.length; i++) {
+                    if (player.tails[i].x == rand.x && player.tails[i].y == rand.y) {
+                        rand.x = getRandomInt(0, 20) * 20
+                        rand.y = getRandomInt(0, 20) * 20
+                        i=0
+                        continue
+                    }
+                }
+                completion = true
+            }
+                
+            berry.posX = rand.x;
+            berry.posY = rand.y;
+
+        }
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+
+        let wIsPressed = false
+        let aIsPressed = false
+        let sIsPressed = false
+        let dIsPressed = true
+
+        function keyPush(evt) {
+            switch(evt.keyCode) {
+                case 37:
+                    if (dIsPressed === false) {
+                        player.velX=-20; player.velY=0;
+                        wIsPressed = false
+                        aIsPressed = true
+                        sIsPressed = false
+                        dIsPressed = false
+                    }
+                    // console.log('A')
+                    break;
+                case 38:
+                    if (sIsPressed === false) {
+                        player.velX=0; player.velY=-20;
+                        wIsPressed = true
+                        aIsPressed = false
+                        sIsPressed = false
+                        dIsPressed = false
+                    }
+                    // console.log('W')
+                    break;
+                case 39:
+                    if (aIsPressed === false) {
+                        player.velX=20; player.velY=0;
+                        wIsPressed = false
+                        aIsPressed = false
+                        sIsPressed = false
+                        dIsPressed = true                        
+                    }
+                    // console.log('D')
+                    break;
+                case 40:
+                    if (wIsPressed === false) {
+                        player.velX=0; player.velY=20;
+                        wIsPressed = false
+                        aIsPressed = false
+                        sIsPressed = true
+                        dIsPressed = false
+                    }
+                    // console.log('S')
+                    break;
+                }
+        }
+        
+    </script>
+</body>
+</html>
